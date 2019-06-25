@@ -1,24 +1,30 @@
-# README
+# Customer Autocomplete Demo
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+query a database table of Customers by first name, email, etc.
 
-Things you may want to cover:
+### installation
 
-* Ruby version
+1. git clone `https://github.com/ryanckulp/customer_autocomplete_demo.git`
+1. bundle (might need to install ruby version via `rbenv install 2.6.1` first)
+3. `rails db:create && rails db:migrate && rails db:seed`
+4. `rails s` then visit localhost:3000 and try it
 
-* System dependencies
+### how it works
 
-* Configuration
+1. `keyup` JS listener on the input field pings search via `/customer_searches/new?query=X`
+2. controller delegates search query to `Customer.search()`
+3. `Customer.search()` performs case-insensitive search for "first_name" attribute only
 
-* Database creation
+### extensions
 
-* Database initialization
+can include email address, last name, etc attributes in search parameters via modifications like...
 
-* How to run the test suite
+```ruby
+def self.search(params)
+  results = where("first_name ILIKE '%#{params[:query]}%'")
+  results += where("last_name ILIKE '%#{params[:query]}%'")
+  results += where("email ILIKE '%#{params[:query]}%'")
 
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+  results.uniq.map { |c| { id: c.id, full_name: c.full_name } }
+end
+```
