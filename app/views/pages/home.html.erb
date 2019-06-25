@@ -1,0 +1,82 @@
+<h1>Customer Autocomplete Demo</h1>
+
+<div class="ui-widget">
+  <label for="customer_name">Search for a customer by name</label>
+  <input id="customer_name" placeholder="John">
+
+  <!-- suggest hiding this ID and submitting to server  -->
+  <input id="customer_id">
+  <small id="search-status"></small>
+</div>
+
+
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+<script type="text/javascript">
+var companyNameInput = $('#customer_name');
+
+var delay = (function(){
+  var timer = 0;
+  return function(callback, ms){
+    clearTimeout (timer);
+    timer = setTimeout(callback, ms);
+  };
+})();
+
+function setSearchStatus(str) {
+  document.getElementById('search-status').innerText = str
+}
+
+function setCustomerId(id) {
+  $("#customer_id").val(id);
+}
+
+// executes request against server (route - controller - model)
+function searchCustomers(query) {
+  setSearchStatus('Searching...');
+  setCustomerId('');
+
+  $.ajax({
+    url: '/customer_searches/new?query=' + query,
+    success: function(resp) {
+      if (resp.customers.length === 0) {
+        setSearchStatus('No customers found, try again.');
+      } else {
+        // var names = resp.customers.map(function(cust){return cust.full_name});
+        setupSearchResults(resp.customers);
+        setSearchStatus(resp.customers.length + ' results found.');
+      }
+    }
+  });
+}
+
+// adds collection of customers (full_name + IDs to autocomplete widget)
+function setupSearchResults(data){
+  $("#customer_name").autocomplete({
+    minLength: 1,
+    source: data.map(function(cust){ return { label: cust.full_name, id: cust.id } }),
+    select: function (event, ui) {
+      $("#customer_name").val(ui.item.label); // save selected customer id to hidden input
+      setCustomerId(ui.item.id); // save selected customer id to second input
+      return false;
+    }
+  });
+}
+
+// listens for new search query
+companyNameInput.keyup(function() {
+  setCustomerId(''); // reset chosen customer ID
+  var query = companyNameInput.val(); // get string user is looking for
+
+  delay(function(){
+    if (query.length === 0) {
+      setSearchStatus('');
+      return false;
+    }
+
+  searchCustomers(query);
+}, 250);
+});
+</script>
